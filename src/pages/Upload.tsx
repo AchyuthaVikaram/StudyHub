@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Upload as UploadIcon, FileText, Image, File } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
+import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Upload = () => {
   const [formData, setFormData] = useState({
@@ -27,6 +29,9 @@ const Upload = () => {
     "Mathematics", "Physics", "Chemistry", "Biology", "Computer Science",
     "Engineering", "Medicine", "Business", "Economics", "Psychology"
   ];
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -59,7 +64,10 @@ const Upload = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (!user) {
+      window.location.href = "/login";
+      return;
+    }
     if (!formData.file) {
       toast({
         title: "Error",
@@ -68,36 +76,41 @@ const Upload = () => {
       });
       return;
     }
-
     setIsUploading(true);
-    
     try {
-      // TODO: Connect to backend API
-      console.log("Uploading:", formData);
-      
-      // Simulate upload
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Upload Successful",
-        description: "Your notes have been uploaded and are being processed!",
-      });
-      
-      // Reset form
-      setFormData({
-        title: "",
-        description: "",
-        subject: "",
-        semester: "",
-        university: "",
-        tags: "",
-        file: null
-      });
-      
-    } catch (error) {
+      const data = new FormData();
+      data.append("title", formData.title);
+      data.append("description", formData.description);
+      data.append("subject", formData.subject);
+      data.append("semester", formData.semester);
+      data.append("university", formData.university);
+      data.append("tags", formData.tags);
+      if (formData.file) {
+        data.append("file", formData.file);
+      }
+      const result = await api.notes.upload(data);
+      if (result.note) {
+        toast({
+          title: "Upload Successful",
+          description: "Your notes have been uploaded and are being processed!",
+        });
+        setFormData({
+          title: "",
+          description: "",
+          subject: "",
+          semester: "",
+          university: "",
+          tags: "",
+          file: null
+        });
+        navigate(`/notes/${result.note.id}`);
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+    } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description: "There was an error uploading your file. Please try again.",
+        description: error.message || "There was an error uploading your file. Please try again.",
         variant: "destructive"
       });
     } finally {

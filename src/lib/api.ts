@@ -1,4 +1,3 @@
-
 const API_BASE_URL = 'http://localhost:5000/api';
 
 // Get auth token from localStorage
@@ -38,7 +37,7 @@ export const api = {
       lastName: string;
       university: string;
       course: string;
-      semester: string;
+      semester: number | null;
     }) => {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
@@ -199,5 +198,3 @@ export const api = {
     },
   },
 };
-
-export default api;

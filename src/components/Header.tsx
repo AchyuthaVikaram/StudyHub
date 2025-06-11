@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GraduationCap, Menu, X, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/context/AuthContext";
 
 const Header = () => {
+  const { user, profile, logout, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // This will be connected to actual auth later
 
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
@@ -37,18 +37,17 @@ const Header = () => {
 
           {/* User Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            {isLoggedIn ? (
+            {!loading && user ? (
               <>
-                <Button variant="ghost" size="sm" className="relative">
-                  <Bell className="h-4 w-4" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-xs">
-                    3
-                  </Badge>
-                </Button>
                 <Link to="/dashboard">
                   <Button variant="ghost" size="sm">Dashboard</Button>
                 </Link>
-                <Button variant="outline" size="sm" onClick={() => setIsLoggedIn(false)}>
+                <Link to="/profile">
+                  <Button variant="ghost" size="sm">
+                    {profile ? `${profile.first_name} ${profile.last_name}` : "Profile"}
+                  </Button>
+                </Link>
+                <Button variant="outline" size="sm" onClick={logout}>
                   Logout
                 </Button>
               </>
@@ -107,13 +106,17 @@ const Header = () => {
               >
                 About
               </Link>
-              
               <div className="pt-4 border-t border-slate-200 flex flex-col space-y-2">
-                {isLoggedIn ? (
+                {!loading && user ? (
                   <>
                     <Link to="/dashboard" onClick={() => setIsMenuOpen(false)}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         Dashboard
+                      </Button>
+                    </Link>
+                    <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        {profile ? `${profile.first_name} ${profile.last_name}` : "Profile"}
                       </Button>
                     </Link>
                     <Button 
@@ -121,7 +124,7 @@ const Header = () => {
                       size="sm" 
                       className="w-full" 
                       onClick={() => {
-                        setIsLoggedIn(false);
+                        logout();
                         setIsMenuOpen(false);
                       }}
                     >

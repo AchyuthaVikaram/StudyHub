@@ -1,4 +1,3 @@
-
 const express = require('express');
 const { createClient } = require('@supabase/supabase-js');
 const cloudinary = require('cloudinary').v2;
@@ -308,6 +307,88 @@ router.get('/user/uploads', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Get user notes error:', error);
     res.status(500).json({ error: 'Failed to fetch user notes' });
+  }
+});
+
+// Delete note (only uploader can delete)
+router.delete('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Get the note to check uploader
+    const { data: note, error: noteError } = await supabase
+      .from('notes')
+      .select('uploader_id, cloudinary_public_id')
+      .eq('id', id)
+      .single();
+    if (noteError || !note) {
+      return res.status(404).json({ error: 'Note not found' });
+    }
+    if (note.uploader_id !== req.user.id) {
+      return res.status(403).json({ error: 'Not authorized to delete this note' });
+    }
+    // Delete from Cloudinary if needed
+    if (note.cloudinary_public_id) {
+      try { await cloudinary.uploader.destroy(note.cloudinary_public_id); } catch {}
+    }
+    // Delete the note
+    const { error: deleteError } = await supabase
+      .from('notes')
+      .delete()
+      .eq('id', id);
+    if (deleteError) {
+      return res.status(500).json({ error: 'Failed to delete note' });
+    }
+    res.json({ message: 'Note deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete note' });
+  }
+});
+
+// Delete rating (only the user who created it can delete)
+router.delete('/:noteId/rating', authenticateToken, async (req, res) => {
+  const { noteId } = req.params;
+  try {
+    // Find the rating
+    const { data: rating, error: ratingError } = await supabase
+      .from('note_ratings')
+      .select('id')
+      .eq('note_id', noteId)
+      .eq('user_id', req.user.id)
+      .single();
+    if (ratingError || !rating) {
+      return res.status(404).json({ error: 'Rating not found' });
+    }
+    // Delete the rating
+    const { error: deleteError } = await supabase
+      .from('note_ratings')
+      .delete()
+      .eq('id', rating.id);
+    if (deleteError) {
+      return res.status(500).json({ error: 'Failed to delete rating' });
+    }
+    // Optionally, update the note's average rating
+    const { data: ratings } = await supabase
+      .from('note_ratings')
+      .select('rating')
+      .eq('note_id', noteId);
+    if (ratings && ratings.length > 0) {
+      const avgRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+      await supabase
+        .from('notes')
+        .update({ 
+          rating: Math.round(avgRating * 10) / 10,
+          rating_count: ratings.length
+        })
+        .eq('id', noteId);
+    } else {
+      await supabase
+        .from('notes')
+        .update({ rating: 0, rating_count: 0 })
+        .eq('id', noteId);
+    }
+    res.json({ message: 'Rating deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete rating' });
   }
 });
 

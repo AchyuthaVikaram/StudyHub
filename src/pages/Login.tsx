@@ -1,32 +1,44 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login API call
-    setTimeout(() => {
+    try {
+      const result = await api.auth.login({ email, password });
+      if (result.session && result.user) {
+        localStorage.setItem('supabase-session', JSON.stringify(result.session));
+        toast({
+          title: "Login Successful",
+          description: "Welcome back to StudyShare!",
+        });
+        setIsLoading(false);
+        window.location.href = "/dashboard"; // Force reload so AuthContext updates
+      } else {
+        throw new Error(result.error || 'Login failed');
+      }
+    } catch (err: any) {
       toast({
-        title: "Login Successful",
-        description: "Welcome back to StudyShare!",
+        title: "Login Failed",
+        description: err.message || "Invalid credentials",
+        variant: "destructive",
       });
       setIsLoading(false);
-      // Redirect to dashboard
-    }, 1000);
+    }
   };
 
   return (

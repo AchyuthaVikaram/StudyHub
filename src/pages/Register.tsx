@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -23,6 +23,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -30,7 +31,15 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    // Validate required fields
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword || !formData.university || !formData.course) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields.",
+        variant: "destructive"
+      });
+      return;
+    }
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Error",
@@ -39,18 +48,36 @@ const Register = () => {
       });
       return;
     }
-
     setIsLoading(true);
-    
-    // Simulate registration API call
-    setTimeout(() => {
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to StudyShare! Please verify your email.",
+    try {
+      const result = await api.auth.register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        university: formData.university,
+        course: formData.course,
+        semester: formData.semester ? parseInt(formData.semester) : null,
       });
+      if (result.user) {
+        toast({
+          title: "Registration Successful",
+          description: "Welcome to StudyShare! Please verify your email.",
+        });
+        setIsLoading(false);
+        navigate("/login");
+      } else {
+        throw new Error(result.error || 'Registration failed');
+      }
+    } catch (err: any) {
+      toast({
+        title: "Registration Failed",
+        description: err.message || "Could not register user",
+        variant: "destructive",
+      });
+      console.log(err);
       setIsLoading(false);
-      // Redirect to login or verification page
-    }, 1000);
+    }
   };
 
   return (
