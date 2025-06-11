@@ -1,55 +1,64 @@
-
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calculator, Atom, Dna, Monitor, Wrench } from "lucide-react";
 import Header from "@/components/Header";
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+
+const subjectMeta = [
+  {
+    name: "Mathematics",
+    icon: Calculator,
+    description: "Calculus, Algebra, Statistics, and more",
+    color: "from-blue-500 to-blue-600"
+  },
+  {
+    name: "Physics",
+    icon: Atom,
+    description: "Mechanics, Thermodynamics, Quantum Physics",
+    color: "from-purple-500 to-purple-600"
+  },
+  {
+    name: "Chemistry",
+    icon: Atom,
+    description: "Organic, Inorganic, Physical Chemistry",
+    color: "from-green-500 to-green-600"
+  },
+  {
+    name: "Biology",
+    icon: Dna,
+    description: "Molecular Biology, Genetics, Ecology",
+    color: "from-emerald-500 to-emerald-600"
+  },
+  {
+    name: "Computer Science",
+    icon: Monitor,
+    description: "Programming, Algorithms, Data Structures",
+    color: "from-orange-500 to-orange-600"
+  },
+  {
+    name: "Engineering",
+    icon: Wrench,
+    description: "Mechanical, Electrical, Civil Engineering",
+    color: "from-red-500 to-red-600"
+  }
+];
 
 const Subjects = () => {
-  const subjects = [
-    {
-      name: "Mathematics",
-      icon: Calculator,
-      description: "Calculus, Algebra, Statistics, and more",
-      notesCount: 1250,
-      color: "from-blue-500 to-blue-600"
-    },
-    {
-      name: "Physics",
-      icon: Atom,
-      description: "Mechanics, Thermodynamics, Quantum Physics",
-      notesCount: 890,
-      color: "from-purple-500 to-purple-600"
-    },
-    {
-      name: "Chemistry", 
-      icon: Atom,
-      description: "Organic, Inorganic, Physical Chemistry",
-      notesCount: 750,
-      color: "from-green-500 to-green-600"
-    },
-    {
-      name: "Biology",
-      icon: Dna,
-      description: "Molecular Biology, Genetics, Ecology",
-      notesCount: 650,
-      color: "from-emerald-500 to-emerald-600"
-    },
-    {
-      name: "Computer Science",
-      icon: Monitor,
-      description: "Programming, Algorithms, Data Structures",
-      notesCount: 1100,
-      color: "from-orange-500 to-orange-600"
-    },
-    {
-      name: "Engineering",
-      icon: Wrench,
-      description: "Mechanical, Electrical, Civil Engineering",
-      notesCount: 980,
-      color: "from-red-500 to-red-600"
-    }
-  ];
+  const [subjectCounts, setSubjectCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.search.popular().then((res) => {
+      const counts: Record<string, number> = {};
+      (res.popularSubjects || []).forEach((s: any) => {
+        counts[(s.subject || "").toLowerCase()] = s.count;
+      });
+      setSubjectCounts(counts);
+      setLoading(false);
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -67,7 +76,7 @@ const Subjects = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {subjects.map((subject, index) => (
+          {subjectMeta.map((subject, index) => (
             <Link key={subject.name} to={`/browse?subject=${subject.name.toLowerCase()}`}>
               <Card className="hover:shadow-xl transition-all duration-300 group hover:-translate-y-2 cursor-pointer">
                 <CardHeader className="pb-4">
@@ -82,14 +91,14 @@ const Subjects = () => {
                   </CardDescription>
                 </CardHeader>
                 
-                <CardContent>
+                {/* <CardContent>
                   <div className="flex items-center justify-between">
                     <Badge variant="secondary" className="text-sm">
-                      {subject.notesCount} notes available
+                      {loading ? "..." : (subjectCounts[subject.name.toLowerCase()] || 0)} notes available
                     </Badge>
                     <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors" />
                   </div>
-                </CardContent>
+                </CardContent> */}
               </Card>
             </Link>
           ))}

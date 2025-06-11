@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { api } from "@/lib/api";
 import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import NotePreviewModal from "@/components/NotePreviewModal";
 
 const Browse = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,6 +27,7 @@ const Browse = () => {
 
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
@@ -47,6 +49,16 @@ const Browse = () => {
     fetchNotes();
   }, [fetchNotes]);
 
+  useEffect(() => {
+    // On mount, check for subject in query params
+    const params = new URLSearchParams(location.search);
+    const subjectParam = params.get("subject");
+    if (subjectParam && subjectParam !== selectedSubject) {
+      setSelectedSubject(subjectParam);
+    }
+    // eslint-disable-next-line
+  }, []);
+
   const handlePreview = async (noteId: string) => {
     try {
       const res = await api.notes.getById(noteId);
@@ -61,13 +73,12 @@ const Browse = () => {
   const handleDownload = async (noteId: string) => {
     try {
       await api.notes.download(noteId);
-      // Fetch note details to get file_url
       const res = await api.notes.getById(noteId);
       if (res.note && res.note.file_url) {
         window.open(res.note.file_url, "_blank");
       }
     } catch {
-      // Optionally show error toast
+      toast({ title: "Download failed", description: "Could not download note.", variant: "destructive" });
     }
   };
 
@@ -259,58 +270,7 @@ const Browse = () => {
             ))
           )}
         </div>
-        {/* Preview Dialog */}
-        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          {previewNote && (
-            <DialogContent>
-              <DialogClose asChild>
-                <button className="absolute top-2 right-2 text-slate-400 hover:text-slate-600 text-3xl">&times;</button>
-              </DialogClose>
-              <h2 className="text-2xl font-bold mb-2">{previewNote.title}</h2>
-              <div className="mb-2 text-slate-600">{previewNote.description}</div>
-              <div className="mb-4 text-sm text-slate-500">Subject: {previewNote.subject} | Uploaded by: {previewNote.user_profiles ? `${previewNote.user_profiles.first_name} ${previewNote.user_profiles.last_name}` : ""}</div>
-              {previewNote.file_type && previewNote.file_type.includes('pdf') && previewNote.file_url && (
-                <iframe src={previewNote.file_url} title="Preview PDF" className="w-full h-96 border rounded" />
-              )}
-              {previewNote.file_type && previewNote.file_type.includes('image') && previewNote.file_url && (
-                <img src={previewNote.file_url} alt="Preview" className="w-full max-h-96 object-contain rounded" />
-              )}
-              {/* Rating Section */}
-              <div className="mt-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium">Average Rating:</span>
-                  <span className="flex items-center text-amber-500">
-                    <Star className="w-4 h-4 fill-current mr-1" />
-                    {previewNote.rating || 0} ({previewNote.rating_count || 0})
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="font-medium">Your Rating:</span>
-                  {[1,2,3,4,5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      className="focus:outline-none"
-                      onClick={() => setUserRating(star)}
-                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
-                    >
-                      <Star className={`w-6 h-6 ${userRating >= star ? 'text-amber-500 fill-current' : 'text-slate-300'}`} />
-                    </button>
-                  ))}
-                  <Button size="sm" className="ml-4 bg-blue-600 hover:bg-blue-700" disabled={!userRating || submittingRating} onClick={handleRate}>
-                    {submittingRating ? "Submitting..." : "Submit Rating"}
-                  </Button>
-                  {/* Show delete rating button if user is the rater */}
-                  {user && previewNote && previewNote.note_ratings && previewNote.note_ratings.some((r: any) => r.user_id === user.id) && (
-                    <Button size="sm" variant="destructive" className="ml-2" onClick={() => handleDeleteRating(previewNote.id)}>
-                      Delete Rating
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </DialogContent>
-          )}
-        </Dialog>
+        <NotePreviewModal open={previewOpen} note={previewNote} onOpenChange={setPreviewOpen} />
       </div>
     </div>
   );

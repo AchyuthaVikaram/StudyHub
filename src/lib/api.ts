@@ -197,4 +197,17 @@ export const api = {
       return response.json();
     },
   },
+  ai: {
+    process: async (data: {
+      noteId: string;
+      actions: string[]; // e.g. ['summarize', 'recommend', 'categorize']
+    }) => {
+      const response = await fetch(`${API_BASE_URL}/ai/process`, {
+        method: 'POST',
+        headers: createHeaders(),
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+  },
 };

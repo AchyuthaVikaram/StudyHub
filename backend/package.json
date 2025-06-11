@@ -1,4 +1,3 @@
-
 {
   "name": "studyshare-backend",
   "version": "1.0.0",
@@ -9,10 +8,16 @@
     "dev": "nodemon server.js",
     "test": "jest"
   },
-  "keywords": ["studyshare", "notes", "education", "api"],
+  "keywords": [
+    "studyshare",
+    "notes",
+    "education",
+    "api"
+  ],
   "author": "StudyShare Team",
   "license": "MIT",
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@supabase/supabase-js": "^2.39.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.0",

@@ -1,7 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Upload, BookOpen } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface HeroSectionProps {
   searchQuery: string;
@@ -9,10 +9,15 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ searchQuery, setSearchQuery }: HeroSectionProps) => {
+  const navigate = useNavigate();
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Searching for:", searchQuery);
-    // This will be connected to actual search functionality later
+    if (searchQuery.trim()) {
+      navigate(`/browse?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      navigate("/browse");
+    }
   };
 
   return (
@@ -58,11 +63,11 @@ const HeroSection = ({ searchQuery, setSearchQuery }: HeroSectionProps) => {
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
+            <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" onClick={() => navigate("/upload")}>
               <Upload className="w-5 h-5 mr-2" />
               Upload Your Notes
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-slate-300 hover:border-blue-500 px-8 py-4 rounded-xl">
+            <Button size="lg" variant="outline" className="border-2 border-slate-300 hover:border-blue-500 px-8 py-4 rounded-xl" onClick={() => navigate("/browse")}>
               Browse All Materials
             </Button>
           </div>
